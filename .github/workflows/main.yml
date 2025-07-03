@@ -2,11 +2,9 @@ name: Meethub CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   ci-check:
@@ -18,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
@@ -27,7 +25,7 @@ jobs:
         working-directory: ${{ matrix.service }}
         run: npm ci
 
-      - name: Lint
+      - name: Lint (if available)
         working-directory: ${{ matrix.service }}
         run: |
           if [ -f package.json ] && grep -q '"lint":' package.json; then
