@@ -1,0 +1,52 @@
+name: Meethub CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [client, server]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm ci
+
+      - name: Lint
+        working-directory: ${{ matrix.service }}
+        run: npm run lint || echo "Lint failed but not blocking PR"
+
+      - name: Build
+        if: matrix.service == 'client'
+        working-directory: client
+        run: npm run build
+
+  deploy-server:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Backend Deploy
+        run: curl -X POST ${{ secrets.RENDER_SERVER_DEPLOY_HOOK }}
+
+  deploy-client:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Frontend Deploy
+        run: curl -X POST ${{ secrets.RENDER_CLIENT_DEPLOY_HOOK }}
