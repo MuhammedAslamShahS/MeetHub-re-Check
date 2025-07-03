@@ -10,7 +10,6 @@ on:
 
 jobs:
   ci-check:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,12 +29,22 @@ jobs:
 
       - name: Lint
         working-directory: ${{ matrix.service }}
-        run: npm run lint || echo "Lint failed but not blocking PR"
+        run: |
+          if [ -f package.json ] && grep -q '"lint":' package.json; then
+            npm run lint || echo "Lint failed but not blocking PR"
+          else
+            echo "No lint script defined. Skipping."
+          fi
 
-      - name: Build
+      - name: Build (Client Only)
         if: matrix.service == 'client'
         working-directory: client
-        run: npm run build
+        run: |
+          if npm run | grep -q 'build'; then
+            npm run build
+          else
+            echo "No build script found. Skipping."
+          fi
 
   deploy-server:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
